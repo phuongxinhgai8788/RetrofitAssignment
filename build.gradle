@@ -4,7 +4,7 @@ buildscript {
         version_moshi = "1.9.3"
         version_navigation = "1.0.0"
         version_retrofit = "2.9.0"
-        version_picasso = "2.5.2"
+        version_picasso = "2.71828"
         version_converter_scalar = "2.1.0"
         version_lifecycle = "2.2.0"
         version_recyclerview = "1.2.0-alpha05"

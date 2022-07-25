@@ -7,23 +7,37 @@ import android.view.MenuItem;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.fragment.app.Fragment;
+
+import com.example.retrofitassignment.network.MarsAPIService;
+import com.example.retrofitassignment.network.MarsProperty;
+import com.example.retrofitassignment.network.Repository;
+
+import retrofit2.Retrofit;
+import retrofit2.converter.gson.GsonConverterFactory;
 
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements ListItemFragment.OpenScreen{
 
-    boolean isMars;
-    ListItemFragment listMarsFragment = ListItemFragment.newInstance();
+    boolean isRent;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        getSupportFragmentManager()
-                .beginTransaction()
-                .add(R.id.fragmentContainer, listMarsFragment)
-                .commit();
+        initRepository();
     }
 
+    private void initRepository() {
+
+        Retrofit retrofit01 = new Retrofit.Builder()
+                .baseUrl("https://mars.udacity.com/")
+                .addConverterFactory(GsonConverterFactory.create())
+                .build();
+        MarsAPIService marsAPIService = retrofit01.create(MarsAPIService.class);
+        Repository.initialize(marsAPIService);
+
+    }
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         MenuInflater inflater = getMenuInflater();
@@ -34,32 +48,51 @@ public class MainActivity extends AppCompatActivity {
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
         switch (item.getItemId()) {
             case R.id.open_mars:
-                isMars = true;
-                listMarsFragment.changeList(isMars);
+                isRent = true;
+                displayListFragment();
                 return true;
             case R.id.open_flickers:
-                isMars = false;
-                listMarsFragment.changeList(isMars);
+                isRent = false;
+                displayListFragment();
                 return true;
             default:
                 return super.onOptionsItemSelected(item);
         }
     }
 
-//    private void displayListFragment() {
-//        Fragment currentFragment = getSupportFragmentManager()
-//                .findFragmentById(R.id.fragmentContainer);
-//        if(currentFragment==null) {
-//            getSupportFragmentManager()
-//                    .beginTransaction()
-//                    .add(R.id.fragmentContainer, listMarsFragment)
-//                    .commit();
-//        } else{
-//            getSupportFragmentManager()
-//                    .beginTransaction()
-//                    .replace(R.id.fragmentContainer, ListMarsFragment.newInstance(isBought))
-//                    .commit();
-//        }
+    private void displayListFragment() {
+        Fragment currentFragment = getSupportFragmentManager()
+                .findFragmentById(R.id.fragmentContainer);
+        if(currentFragment==null) {
+            getSupportFragmentManager()
+                    .beginTransaction()
+                    .add(R.id.fragmentContainer, ListItemFragment.newInstance(isRent))
+                    .commit();
+        } else{
+            getSupportFragmentManager()
+                    .beginTransaction()
+                    .replace(R.id.fragmentContainer, ListItemFragment.newInstance(isRent))
+                    .commit();
+        }
 
+}
+
+    @Override
+    public void openMarsDetailScreen(MarsProperty marsProperty) {
+        Fragment currentFragment = getSupportFragmentManager()
+                .findFragmentById(R.id.fragmentContainer);
+        if(currentFragment==null) {
+            getSupportFragmentManager()
+                    .beginTransaction()
+                    .add(R.id.fragmentContainer, ItemDetailFragment.newInstance(marsProperty))
+                    .commit();
+        } else{
+            getSupportFragmentManager()
+                    .beginTransaction()
+                    .replace(R.id.fragmentContainer, ItemDetailFragment.newInstance(marsProperty))
+                    .addToBackStack(null)
+                    .commit();
+        }
+    }
 }
 

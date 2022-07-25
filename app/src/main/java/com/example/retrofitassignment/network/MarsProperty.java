@@ -2,7 +2,9 @@ package com.example.retrofitassignment.network;
 
 import com.google.gson.annotations.SerializedName;
 
-public class MarsProperty {
+import java.io.Serializable;
+
+public class MarsProperty implements Serializable {
     public String id;
     public String type;
     public @SerializedName("img_src")

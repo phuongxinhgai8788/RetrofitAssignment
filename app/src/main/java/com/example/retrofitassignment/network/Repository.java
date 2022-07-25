@@ -8,10 +8,9 @@ import androidx.annotation.WorkerThread;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 
-import com.example.retrofitassignment.Constant;
-
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.List;
 
 import okhttp3.ResponseBody;
@@ -23,18 +22,16 @@ public class Repository {
     private static Repository INSTANCE;
     private final String TAG = "Repository";
     private MarsAPIService marsAPIService;
-    private FlickersAPIService flickersAPIService;
-    private Call<FlickrResponse> flickerRequest;
     private Call<List<MarsProperty>> marsRequest;
 
-    private Repository() {
-
+    private Repository(MarsAPIService marsAPIService) {
+        this.marsAPIService = marsAPIService;
     }
 
 
-    public static void initialize( ) {
+    public static void initialize(MarsAPIService marsAPIService) {
         if (INSTANCE == null) {
-            INSTANCE = new Repository();
+            INSTANCE = new Repository(marsAPIService);
         }
     }
 
@@ -45,40 +42,7 @@ public class Repository {
         return INSTANCE;
     }
 
-    public void setMarsAPIService(MarsAPIService baseAPIService){
-       this.marsAPIService = baseAPIService;
-    }
-
-    public void setFlickersAPIService(FlickersAPIService flickersAPIService){
-        this.flickersAPIService = flickersAPIService;
-    }
-    public LiveData<List<GalleryItem>> fetchFlickers() {
-        MutableLiveData<List<GalleryItem>> responseLiveData = new MutableLiveData<>();
-        flickerRequest = flickersAPIService.getFlickers();
-        flickerRequest.enqueue(new Callback<FlickrResponse>() {
-
-            @Override
-            public void onResponse(Call<FlickrResponse> call, Response<FlickrResponse> response) {
-                Log.i(TAG, "Response received");
-                if (response != null) {
-                     FlickrResponse flickrResponse = response.body();
-                     PhotoResponse photoResponse = flickrResponse.getPhotos();
-                     List<GalleryItem> galleryItemList = photoResponse.getGalleryItems();
-                    if (photoResponse != null) {
-                        responseLiveData.postValue(galleryItemList);
-                    }
-                }
-            }
-
-            @Override
-            public void onFailure(Call<FlickrResponse> call, Throwable t) {
-                Log.e(TAG, "Failed to fetch mars", t);
-            }
-        });
-        return responseLiveData;
-    }
-
-    public LiveData<List<MarsProperty>> fetchMars() {
+    public LiveData<List<MarsProperty>> fetchRentMars() {
         MutableLiveData<List<MarsProperty>> responseLiveData = new MutableLiveData<>();
         marsRequest = marsAPIService.getMars();
         marsRequest.enqueue(new Callback<List<MarsProperty>>() {
@@ -89,7 +53,13 @@ public class Repository {
                 if (response != null) {
                     List<MarsProperty> marsResponse = response.body();
                     if (marsResponse != null) {
-                        responseLiveData.postValue(marsResponse);
+                        List<MarsProperty> rentMars = new ArrayList<>();
+                        for(MarsProperty marsProperty:marsResponse){
+                            if("rent".equals(marsProperty.getType())){
+                                rentMars.add(marsProperty);
+                            }
+                        }
+                        responseLiveData.postValue(rentMars);
                     }
                 }
             }
@@ -101,40 +71,41 @@ public class Repository {
         });
         return responseLiveData;
     }
-    @WorkerThread
-    public Bitmap fetchMarsPhoto(String url) throws IOException {
-        Bitmap bitmap = null;
-        Response<ResponseBody> response = marsAPIService.fetchUrlBytes(url).execute();
-        InputStream inputStream = response.body().byteStream();
-        if (inputStream != null) {
-            bitmap = BitmapFactory.decodeStream(inputStream);
-            Log.i(TAG, "Decoded bitmap = " + bitmap + " from Response = " + response);
-        }
-        inputStream.close();
-        return bitmap;
-    }
 
-    @WorkerThread
-    public Bitmap fetchFlickersPhoto(String url) throws IOException {
-        Bitmap bitmap = null;
-        Response<ResponseBody> response = marsAPIService.fetchUrlBytes(url).execute();
-        InputStream inputStream = response.body().byteStream();
-        if (inputStream != null) {
-            bitmap = BitmapFactory.decodeStream(inputStream);
-            Log.i(TAG, "Decoded bitmap = " + bitmap + " from Response = " + response);
-        }
-        inputStream.close();
-        return bitmap;
+    public LiveData<List<MarsProperty>> fetchBoughtMars() {
+        MutableLiveData<List<MarsProperty>> responseLiveData = new MutableLiveData<>();
+        marsRequest = marsAPIService.getMars();
+        marsRequest.enqueue(new Callback<List<MarsProperty>>() {
+
+            @Override
+            public void onResponse(Call<List<MarsProperty>> call, Response<List<MarsProperty>> response) {
+                Log.i(TAG, "Response received");
+                if (response != null) {
+                    List<MarsProperty> marsResponse = response.body();
+                    if (marsResponse != null) {
+                        List<MarsProperty> boughtMars = new ArrayList<>();
+                        for(MarsProperty marsProperty:marsResponse){
+                            if("bought".equals(marsProperty.getType())){
+                                boughtMars.add(marsProperty);
+                            }
+                        }
+                        responseLiveData.postValue(boughtMars);
+                    }
+                }
+            }
+
+            @Override
+            public void onFailure(Call<List<MarsProperty>> call, Throwable t) {
+                Log.e(TAG, "Failed to fetch mars", t);
+            }
+        });
+        return responseLiveData;
     }
     public void cancelRequestInFlight() {
         if (marsRequest != null) {
             if (marsRequest.isExecuted())
                 marsRequest.cancel();
         }
-        if (flickerRequest != null)
-            if (flickerRequest.isExecuted()) {
-                flickerRequest.cancel();
-            }
 
     }
 }
